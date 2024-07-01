@@ -87,6 +87,9 @@ client = discord.Client(intents=intents)
 @client.event
 async def on_ready():
   print(f'Logged in as {client.user}')
+  activity = discord.Activity(type=discord.ActivityType.watching, name="the stars")
+  await client.change_presence(activity=activity, status=discord.Status.idle)
+
 
 @client.event
 async def on_message(message):
@@ -223,6 +226,148 @@ async def on_message(message):
       color=0x00bcff,
       timestamp=datetime.datetime.now()
     ).set_footer(text='Data compiled from various sources')
+    
+    await message.reply(embed=embed)
+    
+  if message.content.startswith('$marsweather'):
+    data = requests.get(f'https://api.nasa.gov/insight_weather/?api_key={nasa_api_key}&feedtype=json&ver=1.0').json()
+    
+    if 'sol_keys' not in data or len(data['sol_keys']) < 1:
+      await message.reply(embed=
+        discord.Embed(
+          title='Mars Weather Report',
+          description='Failed to fetch Mars weather data. Please try again later',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return
+    
+    latest_sol = data['sol_keys'][-1]
+    weather = data[latest_sol]
+    
+    embed = discord.Embed(
+      title='Mars Weather Report',
+      description=f'Latest weather report from Mars (Sol {latest_sol}):',
+      color=0x00bcff,
+      timestamp=datetime.datetime.now(),
+    ).set_footer(text='Data provided by the NASA InSight API')
+    
+    embed.add_field(name="Atmospheric Pressure", value=f"{weather['PRE']['av']} Pa")
+    embed.add_field(name="Temperature (Average)", value=f"{weather['AT']['av']} °C")
+    embed.add_field(name="Wind Speed (Maximum)", value=f"{weather['HWS']['mx']} m/s")
+    
+    await message.reply(embed=embed)
+    
+  if message.content.startswith('$asteroid'):
+    if len(args) < 1:
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description='Please provide a valid asteroid ID to get information about in the format `$asteroid [id]`.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return
+  
+    id = args[0]
+    
+    try:
+      data = requests.get(f'https://api.nasa.gov/neo/rest/v1/neo/{id}?api_key={nasa_api_key}').json()
+    except :
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description=f'Asteroid with ID `{id}` not found.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return 
+    
+    if 'error' in data:
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description=f'Asteroid with ID `{id}` not found.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return
+    
+    embed = discord.Embed(
+      title=f'Asteroid Information (ID: {id})',
+      description=f"Name: {data['name']}\n"
+                  f"NASA JPL URL: {data['nasa_jpl_url']}\n"
+                  f"Absolute Magnitude: {data['absolute_magnitude_h']}\n"
+                  f"Potentially Hazardous: {'Yes' if data['is_potentially_hazardous_asteroid'] else 'No'}",
+      color=0x00bcff,
+      timestamp=datetime.datetime.now(),
+    ).set_footer(text='Data provided by NASA NeoWs API')
+    
+    embed.add_field(name="Close Approach Date", value=data['close_approach_data'][0]['close_approach_date'])
+    embed.add_field(name="Miss Distance (kilometers)", value=f"{data['close_approach_data'][0]['miss_distance']['kilometers']} km")
+    
+    await message.reply(embed=embed) 
+    
+  if message.content.startswith('$constellation'):
+    await message.reply(embed=
+      discord.Embed(
+        title='Command Currently Unavailable',
+        description='The `$constellation` command is currently unavailable due to an API outage. Please try again later',
+        color=0xff0000,
+        timestamp=datetime.datetime.now()
+      )
+    )
+    return
+    
+    if len(args) < 1:
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description='Please provide a valid constellation name to get information about in the format `$constellation [name]`.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return
+  
+    id = " ".join(args)
+    
+    try:
+      data = requests.get(f'https://api.le-systeme-solaire.net/rest/bodies/{id.lower()}').json()
+    except :
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description=f'Constellation with name `{id}` not found.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return 
+    
+    if 'error' in data:
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description=f'Constellation with name `{id}` not found.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return
+    
+    embed = discord.Embed(
+      title=f"Constellation Information: {id.capitalize()}",
+      description=f"Name: {data['englishName']}\n"
+                  f"Constellation Abbreviation: {data['code']}\n"
+                  f"Constellation Family: {data['family']}",
+      color=0x00bcff,
+      timestamp=datetime.datetime.now()
+    ).set_footer(text='Data provided by Le Système Solaire API')
     
     await message.reply(embed=embed)
   

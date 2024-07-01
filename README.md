@@ -4,6 +4,7 @@ Cosmo is a versatile Discord bot designed for astronomy enthusiasts and learners
 
 ## Commands
 
+- `$ping`: Displays the bot's roundtrip latency.
 - `$apod`: Displays the Astronomy Picture of the Day from NASA.
 - `$launches`: Fetches upcoming rocket launches from the SpaceX API.
 - `$planet [name]`: Provides details about a specific planet in our solar system.

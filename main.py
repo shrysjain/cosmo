@@ -470,6 +470,7 @@ async def on_message(message):
       
   if message.content.startswith('$help'):
     desc = [
+      '`$ping` - Pong! 🏓',
       '`$apod` - Displays the Astronomy Picture of the Day from NASA',
       '`$launches` - Fetches upcoming rocket launches from SpaceX',
       '`$planet [name]` - Provides details about a specific planet in our solar system',

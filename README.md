@@ -14,7 +14,7 @@ Cosmo is a versatile Discord bot designed for astronomy enthusiasts and learners
 - `$asteroid [id]`: Displays information about a specific asteroid.
 - `$marsweather`: Displays information about the current weather on Mars.
 - `$exoplanet [name]`: Shows information about a specific exoplanet.
-- `$spacequiz$`: Quizzes your knowledge on some fun space trivia.
+- `$spacequiz`: Quizzes your knowledge on some fun space trivia.
 - `$help`: Displays an informative preview of all available commands.
 
 ## Built With

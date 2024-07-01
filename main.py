@@ -1,29 +1,14 @@
 # Import packages
+from webserver import keep_alive
 from dotenv import load_dotenv
 from discord.ext import tasks
-from threading import Thread
 from itertools import cycle
-from flask import Flask
 import datetime
 import requests
 import discord
 import asyncio
 import random
 import os
-
-# Start uptime server
-app = Flask('')
-
-@app.route('/')
-def main():
-  return 'Cosmo is Alive 🚀'
-
-def run():
-  app.run(host='0.0.0.0', port=8000)
-  
-def keep_alive():
-  server = Thread(target=run)
-  server.start()
 
 # Load environmental variables
 load_dotenv()
@@ -508,5 +493,7 @@ async def on_message(message):
         timestamp=datetime.datetime.now()
       )
     )
-  
+
+keep_alive()
+
 client.run(token)

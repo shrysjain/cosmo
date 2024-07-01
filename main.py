@@ -480,7 +480,7 @@ async def on_message(message):
       '`$asteroid [id]` - Displays information about a specific asteroid',
       '`$marsweather` - Displays information about the current weather on Mars',
       '`$exoplanet [name]` - Shows information about a specific exoplanet',
-      '`$spacequiz$` - Quizzes your knowledge on some fun space trivia',
+      '`$spacequiz` - Quizzes your knowledge on some fun space trivia',
       '`$help` - Displays an informative preview of all available commands',
       '',
       'Developed with ❤️ by [Shreyas Jain](https://shrysjain.github.io) - Open source on [GitHub](https://github.com/shrysjain/cosmo)'

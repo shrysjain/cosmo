@@ -1,10 +1,29 @@
 # Import packages
 from dotenv import load_dotenv
+from discord.ext import tasks
+from threading import Thread
+from itertools import cycle
+from flask import Flask
 import datetime
 import requests
 import discord
+import asyncio
 import random
 import os
+
+# Start uptime server
+app = Flask('')
+
+@app.route('/')
+def main():
+  return 'Cosmo is Alive 🚀'
+
+def run():
+  app.run(host='0.0.0.0', port=8000)
+  
+def keep_alive():
+  server = Thread(target=run)
+  server.start()
 
 # Load environmental variables
 load_dotenv()
@@ -78,6 +97,21 @@ space_facts = [
   'The largest known structure in the universe is the Sloan Great Wall, a vast supercluster of galaxies stretching about 1.38 billion light-years across.'
 ]
 
+quiz_set = [
+  {"question": "What is the largest planet in our solar system?", "answer": "Jupiter"},
+  {"question": "What is the closest planet to the Sun?", "answer": "Mercury"},
+  {"question": "What is the name of the first artificial satellite launched into space?", "answer": "Sputnik"},
+  {"question": "What galaxy is Earth located in?", "answer": "Milky Way"},
+  {"question": "Who was the first human to travel into space?", "answer": "Yuri Gagarin"},
+  {"question": "What planet is known as the Red Planet?", "answer": "Mars"},
+  {"question": "What is the name of NASA's most famous space telescope?", "answer": "Hubble"},
+  {"question": "Which planet has the most moons?", "answer": "Saturn"},
+  {"question": "What is the term for a rocky body that orbits the sun?", "answer": "Asteroid"},
+  {"question": "What is the name of the second manned mission to land on the Moon?", "answer": "Apollo 12"}
+]
+
+statuses = cycle(['the stars', 'the night sky', 'for $help'])
+
 # Create discord client
 intents = discord.Intents.default()
 intents.message_content = True
@@ -89,7 +123,12 @@ async def on_ready():
   print(f'Logged in as {client.user}')
   activity = discord.Activity(type=discord.ActivityType.watching, name="the stars")
   await client.change_presence(activity=activity, status=discord.Status.idle)
+  change_status.start()
 
+@tasks.loop(seconds=60)
+async def change_status():
+  await client.change_presence(activity=(discord.Activity(type=discord.ActivityType.watching, name=next(statuses))), status=discord.Status.idle)
+  print('Client status switched')
 
 @client.event
 async def on_message(message):
@@ -370,5 +409,104 @@ async def on_message(message):
     ).set_footer(text='Data provided by Le Système Solaire API')
     
     await message.reply(embed=embed)
+  
+  if message.content.startswith('$exoplanet'):
+    if len(args) < 1:
+          await message.reply(embed=
+            discord.Embed(
+              title='Invalid Arguments',
+              description='Please provide a valid exoplanet name to get information about in the format `$exoplanet [name]`.',
+              color=0xff0000,
+              timestamp=datetime.datetime.now(),
+            )
+          )
+          return
+      
+    id = " ".join(args)
+        
+    try:
+      data = requests.get(f"https://exoplanetarchive.ipac.caltech.edu/TAP/sync?query=select+pl_name,hostname,discoverymethod,disc_year,pl_rade,pl_bmasse,pl_orbper+from+ps+where+pl_name=\'{id}\'&format=json").json()
+      info = data[0]
+    except :
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description=f'Exoplanet with name `{id}` not found.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return 
+        
+    if 'error' in data:
+      await message.reply(embed=
+        discord.Embed(
+          title='Invalid Arguments',
+          description=f'Exoplanet with name `{id}` not found.',
+          color=0xff0000,
+          timestamp=datetime.datetime.now(),
+        )
+      )
+      return
+        
+    embed = discord.Embed(
+      title=f'Exoplanet Information: {info['pl_name']}',
+      description=f'Discovery Method: {info['discoverymethod']}\n'
+                  f'Host Star: {info['hostname']}\n'
+                  f'Orbital Period (days): {info['pl_orbper']}\n'
+                  f'Discovery Year: {info['disc_year']}',
+      color=0x00bcff,
+      timestamp=datetime.datetime.now(),
+    ).set_footer(text='Data provided by Caltech IPAC and NASA')
+  
+    await message.reply(embed=embed)
+    
+  if message.content.startswith('$spacequiz'):
+    data = random.choice(quiz_set)
+    
+    question = data['question']
+    answer = data['answer']
+    
+    def check(m):
+      return m.author == message.author and m.channel == message.channel
+    
+    start = await message.reply(f'🛸 **Space Quiz!**\n\n{question}')
+    
+    try:
+      user_answer = await client.wait_for('message', check=check, timeout=15.0)
+    except asyncio.TimeoutError:
+      await start.edit(content=f'⌛ You took too long to answer! The correct answer was **{answer}**.')
+      return
+
+    if user_answer.content.strip().lower() == answer.lower():
+      await user_answer.reply(f'🎉 Correct! **{answer}** is the right answer.')
+    else:
+      await user_answer.reply(f'❌ Incorrect! The correct answer was **{answer}**.')
+      
+  if message.content.startswith('$help'):
+    desc = [
+      '`$apod` - Displays the Astronomy Picture of the Day from NASA',
+      '`$launches` - Fetches upcoming rocket launches from SpaceX',
+      '`$planet [name]` - Provides details about a specific planet in our solar system',
+      '`$iss` - Retrieves current position and details of the International Space Station',
+      '`$fact` - Shares interesting space facts',
+      '`$constellation [name]` - Shows information about a specific constellation',
+      '`$asteroid [id]` - Displays information about a specific asteroid',
+      '`$marsweather` - Displays information about the current weather on Mars',
+      '`$exoplanet [name]` - Shows information about a specific exoplanet',
+      '`$spacequiz$` - Quizzes your knowledge on some fun space trivia',
+      '`$help` - Displays an informative preview of all available commands',
+      '',
+      'Developed with ❤️ by [Shreyas Jain](https://shrysjain.github.io) - Open source on [GitHub](https://github.com/shrysjain/cosmo)'
+    ]
+    
+    await message.reply(embed=
+      discord.Embed(
+        title='Help',
+        description='\n'.join(desc),
+        color=0x00bcff,
+        timestamp=datetime.datetime.now()
+      )
+    )
   
 client.run(token)
